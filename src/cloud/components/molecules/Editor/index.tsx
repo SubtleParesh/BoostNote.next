@@ -98,6 +98,7 @@ interface EditorProps {
   revisionHistory: SerializedRevision[]
   contributors: SerializedUser[]
   backLinks: SerializedDoc[]
+  thread?: string
 }
 
 interface EditorPosition {
@@ -120,6 +121,7 @@ const Editor = ({
   contributors,
   backLinks,
   revisionHistory,
+  thread,
 }: EditorProps) => {
   const { currentUserPermissions, permissions } = usePage()
   const { pushMessage, pushApiErrorMessage } = useToast()
@@ -190,6 +192,22 @@ const Editor = ({
   })
 
   const [commentState, commentActions] = useCommentManagerState(doc.id)
+
+  const prevThreadNavigation = useRef('')
+  useEffect(() => {
+    if (
+      thread != null &&
+      prevThreadNavigation.current !== thread &&
+      commentState.mode === 'list'
+    ) {
+      prevThreadNavigation.current = thread
+      const targetThread = commentState.threads.find((thr) => thr.id === thread)
+      if (targetThread != null) {
+        setPreferences({ docContextMode: 'comment' })
+        commentActions.setMode({ mode: 'thread', thread: targetThread })
+      }
+    }
+  }, [thread, commentState, commentActions, setPreferences])
 
   const normalizedCommentState = useMemo(() => {
     if (commentState.mode === 'list_loading' || permissions == null) {
