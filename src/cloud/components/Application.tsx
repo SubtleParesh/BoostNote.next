@@ -102,7 +102,7 @@ import { trackEvent } from '../api/track'
 import { MixpanelActionTrackTypes } from '../interfaces/analytics/mixpanel'
 import DiscountModal from './organisms/Modal/contents/DiscountModal'
 import { compareAsc } from 'date-fns'
-import { Notification } from '../interfaces/db/notifications'
+import { Notification as UserNotification } from '../interfaces/db/notifications'
 import useNotificationState from '../../shared/lib/hooks/useNotificationState'
 
 interface ApplicationProps {
@@ -425,7 +425,7 @@ const Application = ({
     setViewed,
   } = useNotificationState(team?.id)
   const notificationClick = useCallback(
-    (notification: Notification) => {
+    (notification: UserNotification) => {
       setPopOverState(null)
       setViewed(notification)
       push(notification.link)
@@ -742,10 +742,14 @@ function mapToolbarRows(
     tooltip: 'Notifications',
     active: popOverState === 'notifications',
     icon: mdiBell,
-    onClick: () =>
+    onClick: () => {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission()
+      }
       setPopOverState((prev) =>
         prev === 'notifications' ? null : 'notifications'
-      ),
+      )
+    },
   })
 
   if (team != null && subscription == null && isEligibleForDiscount(team)) {
