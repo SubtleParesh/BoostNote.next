@@ -104,6 +104,8 @@ import DiscountModal from './organisms/Modal/contents/DiscountModal'
 import { compareAsc } from 'date-fns'
 import { Notification as UserNotification } from '../interfaces/db/notifications'
 import useNotificationState from '../../shared/lib/hooks/useNotificationState'
+import { useNotifications } from '../../shared/lib/stores/notifications'
+import NotifyIcon from '../../shared/components/atoms/NotifyIcon'
 
 interface ApplicationProps {
   content: ContentLayoutProps
@@ -153,6 +155,7 @@ const Application = ({
   const [showFuzzyNavigation, setShowFuzzyNavigation] = useState(false)
   const { popup } = useContextMenu()
   const { treeWithOrderedCategories } = useCloudSidebarTree()
+  const { counts } = useNotifications()
 
   usePathnameChangeEffect(() => {
     setShowFuzzyNavigation(false)
@@ -200,7 +203,8 @@ const Application = ({
       openSettingsTab,
       sidebarState,
       team,
-      subscription
+      subscription,
+      team != null ? counts[team.id] : 0
     )
   }, [
     sidebarState,
@@ -210,6 +214,7 @@ const Application = ({
     openState,
     popOverState,
     subscription,
+    counts,
   ])
 
   const topbarTree = useMemo(() => {
@@ -228,8 +233,8 @@ const Application = ({
   }, [team, initialLoadDone, docsMap, foldersMap, workspacesMap, push])
 
   const spaces = useMemo(() => {
-    return mapSpaces(push, teams, invites, team)
-  }, [teams, team, invites, push])
+    return mapSpaces(push, teams, invites, counts, team)
+  }, [teams, team, invites, push, counts])
 
   const historyItems = useMemo(() => {
     return mapHistory(history || [], push, docsMap, foldersMap, team)
@@ -702,7 +707,8 @@ function mapToolbarRows(
   openSettingsTab: (tab: SettingsTab) => void,
   sidebarState?: SidebarState,
   team?: SerializedTeam,
-  subscription?: SerializedSubscription
+  subscription?: SerializedSubscription,
+  newNotifications?: number
 ) {
   const rows: SidebarToolbarRow[] = []
   if (team != null) {
@@ -741,7 +747,7 @@ function mapToolbarRows(
   rows.push({
     tooltip: 'Notifications',
     active: popOverState === 'notifications',
-    icon: mdiBell,
+    icon: newNotifications ? <NotifyIcon path={mdiBell} /> : mdiBell,
     onClick: () => {
       if (Notification.permission === 'default') {
         Notification.requestPermission()
@@ -793,6 +799,7 @@ function mapSpaces(
   push: (url: string) => void,
   teams: SerializedTeam[],
   invites: SerializedTeamInvite[],
+  counts: Record<string, number>,
   team?: SerializedTeam
 ) {
   const rows: SidebarSpace[] = []
@@ -801,6 +808,7 @@ function mapSpaces(
     rows.push({
       label: globalTeam.name,
       active: team?.id === globalTeam.id,
+      notificationCount: counts[globalTeam.id],
       icon:
         globalTeam.icon != null
           ? buildIconUrl(globalTeam.icon.location)
