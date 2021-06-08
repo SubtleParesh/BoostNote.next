@@ -3,6 +3,7 @@ node_modules/*
 .env
 .env.staging
 .env.production
+.env.local
 Desktop.ini
 Thumbs.db
 *.log
